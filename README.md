@@ -1,6 +1,6 @@
 <h1>ExpNo 7 : Implement Alpha-beta pruning of Minimax Search Algorithm for a Simple TIC-TAC-TOE game</h1> 
-<h3>Name:     </h3>
-<h3>Register Number:          </h3>
+<h3>Name:  SAMEENA J   </h3>
+<h3>Register Number:  2305002019       </h3>
 <H3>Aim:</H3>
 <p>
 Implement Alpha-beta pruning of Minimax Search Algorithm for a Simple TIC-TAC-TOE game
@@ -25,187 +25,122 @@ When added to a simple minimax algorithm, it gives the same output but cuts off 
 
 ## PROGRAM
 ```python
+import math
 import time
 
-class Game:
+class TicTacToe:
     def __init__(self):
-        self.initialize_game()
+        self.board = [['.' for _ in range(3)] for _ in range(3)]
+        self.player = 'X' 
 
-    def initialize_game(self):
-        self.current_state = [['.','.','.'],
-                              ['.','.','.'],
-                              ['.','.','.']]
-
-        # Player X always plays first
-        self.player_turn = 'X'
-
-    def draw_board(self):
-        for i in range(0, 3):
-            for j in range(0, 3):
-                print('{}|'.format(self.current_state[i][j]), end=" ")
-            print()
+    def print_board(self):
+        for row in self.board:
+            print(' | '.join(row))
         print()
-    def is_valid(self, px, py):
-        if px < 0 or px > 2 or py < 0 or py > 2:
-            return False
-        elif self.current_state[px][py] != '.':
-            return False
+
+    def is_valid(self, x, y):
+        return 0 <= x < 3 and 0 <= y < 3 and self.board[x][y] == '.'
+
+    def check_winner(self):
+        
+        for i in range(3):
+            if self.board[i][0] == self.board[i][1] == self.board[i][2] != '.':
+                return self.board[i][0]
+            if self.board[0][i] == self.board[1][i] == self.board[2][i] != '.':
+                return self.board[0][i]
+
+        
+        if self.board[0][0] == self.board[1][1] == self.board[2][2] != '.':
+            return self.board[0][0]
+        if self.board[0][2] == self.board[1][1] == self.board[2][0] != '.':
+            return self.board[0][2]
+
+        
+        for row in self.board:
+            if '.' in row:
+                return None
+        return '.' 
+    def minimax(self, is_max, alpha, beta):
+        result = self.check_winner()
+        if result == 'X': return -1, None, None
+        if result == 'O': return 1, None, None
+        if result == '.': return 0, None, None
+
+        if is_max:
+            best = -math.inf
+            move = None
+            for i in range(3):
+                for j in range(3):
+                    if self.board[i][j] == '.':
+                        self.board[i][j] = 'O'
+                        val, _, _ = self.minimax(False, alpha, beta)
+                        self.board[i][j] = '.'
+                        if val > best:
+                            best = val
+                            move = (i, j)
+                        alpha = max(alpha, val)
+                        if beta <= alpha:
+                            break
+            return best, move[0], move[1]
+
         else:
-            return True
-    def is_end(self):
-    # Vertical win
-        for i in range(0, 3):
-            if (self.current_state[0][i] != '.' and
-                self.current_state[0][i] == self.current_state[1][i] and
-                self.current_state[1][i] == self.current_state[2][i]):
-                return self.current_state[0][i]
+            best = math.inf
+            move = None
+            for i in range(3):
+                for j in range(3):
+                    if self.board[i][j] == '.':
+                        self.board[i][j] = 'X'
+                        val, _, _ = self.minimax(True, alpha, beta)
+                        self.board[i][j] = '.'
+                        if val < best:
+                            best = val
+                            move = (i, j)
+                        beta = min(beta, val)
+                        if beta <= alpha:
+                            break
+            return best, move[0], move[1]
 
-        # Horizontal win
-        for i in range(0, 3):
-            if (self.current_state[i] == ['X', 'X', 'X']):
-                return 'X'
-            elif (self.current_state[i] == ['O', 'O', 'O']):
-                return 'O'
+    def play(self):
+        print("You are X, Computer is O\n")
+        self.print_board()
 
-    # Main diagonal win
-        if (self.current_state[0][0] != '.' and
-            self.current_state[0][0] == self.current_state[1][1] and
-            self.current_state[0][0] == self.current_state[2][2]):
-            return self.current_state[0][0]
-
-    # Second diagonal win
-        if (self.current_state[0][2] != '.' and
-            self.current_state[0][2] == self.current_state[1][1] and
-            self.current_state[0][2] == self.current_state[2][0]):
-            return self.current_state[0][2]
-
-    # Is the whole board full?
-        for i in range(0, 3):
-            for j in range(0, 3):
-                if self.current_state[i][j] == '.':
-                    return None
-    # It's a tie!
-        return '.'
-    def max_alpha_beta(self, alpha, beta):
-        maxv = -2
-        px = None
-        py = None
-
-        result = self.is_end()
-
-        if result == 'X':
-            return (-1, 0, 0)
-        elif result == 'O':
-            return (1, 0, 0)
-        elif result == '.':
-            return (0, 0, 0)
-
-        for i in range(0, 3):
-            for j in range(0, 3):
-                if self.current_state[i][j] == '.':
-                    self.current_state[i][j] = 'O'
-                    (m, min_i, in_j) = self.min_alpha_beta(alpha, beta)
-                    if m > maxv:
-                        maxv = m
-                        px = i
-                        py = j
-                    self.current_state[i][j] = '.'
-
-                    # Next two ifs in Max and Min are the only difference between regular algorithm and minimax
-                    if maxv >= beta:
-                        return (maxv, px, py)
-
-                    if maxv > alpha:
-                        alpha = maxv
-
-        return (maxv, px, py)
-
-    def min_alpha_beta(self, alpha, beta):
-
-        minv = 2
-
-        qx = None
-        qy = None
-
-        result = self.is_end()
-
-        if result == 'X':
-            return (-1, 0, 0)
-        elif result == 'O':
-            return (1, 0, 0)
-        elif result == '.':
-            return (0, 0, 0)
-
-        for i in range(0, 3):
-            for j in range(0, 3):
-                if self.current_state[i][j] == '.':
-                    self.current_state[i][j] = 'X'
-                    (m, max_i, max_j) = self.max_alpha_beta(alpha, beta)
-                    if m < minv:
-                        minv = m
-                        qx = i
-                        qy = j
-                    self.current_state[i][j] = '.'
-
-                    if minv <= alpha:
-                        return (minv, qx, qy)
-
-                    if minv < beta:
-                        beta = minv
-
-        return (minv, qx, qy)
-    def play_alpha_beta(self):
         while True:
-            self.draw_board()
-            self.result = self.is_end()
-
-            if self.result != None:
-                if self.result == 'X':
-                    print('The winner is X!')
-                elif self.result == 'O':
-                    print('The winner is O!')
-                elif self.result == '.':
-                    print("It's a tie!")
-
-
-                self.initialize_game()
-                return
-
-            if self.player_turn == 'X':
-
-                while True:
-                    start = time.time()
-                    (m, qx, qy) = self.min_alpha_beta(-2, 2)
-                    end = time.time()
-                    print('Evaluation time: {}s'.format(round(end - start, 7)))
-                    print('Recommended move: X = {}, Y = {}'.format(qx, qy))
-
-                    px = int(input('Insert the X coordinate: '))
-                    py = int(input('Insert the Y coordinate: '))
-
-                    qx = px
-                    qy = py
-
-                    if self.is_valid(px, py):
-                        self.current_state[px][py] = 'X'
-                        self.player_turn = 'O'
-                        break
-                    else:
-                        print('The move is not valid! Try again.')
+            # Player move
+            if self.player == 'X':
+                x = int(input("Enter row (0-2): "))
+                y = int(input("Enter col (0-2): "))
+                if not self.is_valid(x, y):
+                    print("Invalid move! Try again.")
+                    continue
+                self.board[x][y] = 'X'
+                self.player = 'O'
 
             else:
-                (m, px, py) = self.max_alpha_beta(-2, 2)
-                self.current_state[px][py] = 'O'
-                self.player_turn = 'X'
+                print("Computer is thinking...")
+                start = time.time()
+                _, x, y = self.minimax(True, -math.inf, math.inf)
+                end = time.time()
+                print(f"Computer chose position: ({x}, {y})")
+                print(f"Evaluation time: {round(end - start, 4)}s\n")
+                self.board[x][y] = 'O'
+                self.player = 'X'
 
+            self.print_board()
+            winner = self.check_winner()
+            if winner:
+                if winner == 'X':
+                    print("🎉 You win!")
+                elif winner == 'O':
+                    print("💻 Computer wins!")
+                else:
+                    print("🤝 It's a draw!")
+                break
 
-
-def main():
-    g = Game()
-    g.play_alpha_beta()
 
 if __name__ == "__main__":
-    main()
+    game = TicTacToe()
+    game.play()
+
 ```
 <hr>
 <h2>Sample Input and Output:</h2>
